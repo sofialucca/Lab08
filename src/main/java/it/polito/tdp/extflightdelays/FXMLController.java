@@ -5,6 +5,7 @@
 package it.polito.tdp.extflightdelays;
 
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
 
@@ -13,6 +14,7 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 
 import it.polito.tdp.extflightdelays.model.Airport;
 import it.polito.tdp.extflightdelays.model.Model;
+import it.polito.tdp.extflightdelays.model.Rotta;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -46,13 +48,17 @@ public class FXMLController {
     		return;
     	}
     	int distanzaMinima = Integer.parseInt(input);
-    	Graph <Airport, DefaultWeightedEdge> grafo = model.creaGrafo(distanzaMinima);
-    	txtResult.appendText("Grafo creato con "+grafo.vertexSet().size()+" vertici e "+grafo.edgeSet().size()+" archi\n\n");
+    	model.creaGrafo(distanzaMinima);
+    	txtResult.appendText("Grafo creato con "+model.getNumeroVertici()+" vertici e "+model.getNumeroArchi()+" archi\n\n");
     	
-    	Set<DefaultWeightedEdge> archi = grafo.edgeSet();
-    	for(DefaultWeightedEdge e: archi) {
-    		txtResult.appendText(grafo.getEdgeSource(e).getAirportName()+"-"+grafo.getEdgeTarget(e).getAirportName()+": "+grafo.getEdgeWeight(e)+"\n");
+    	List<Rotta> rotte = model.getRotte();
+    	if(!rotte.isEmpty()) {
+    		txtResult.appendText("ELENCO ROTTE:\n");
+        	for(Rotta r: rotte) {
+        		txtResult.appendText(r.getA1().getAirportName()+"  -  "+r.getA2().getAirportName()+": "+r.getDistanza()+"\n");
+        	}    		
     	}
+
     }
 
     private boolean isValid(String input) {

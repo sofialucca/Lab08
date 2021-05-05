@@ -1,6 +1,9 @@
 package it.polito.tdp.extflightdelays.model;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.jgrapht.Graph;
@@ -12,41 +15,51 @@ import it.polito.tdp.extflightdelays.db.ExtFlightDelaysDAO;
 
 public class Model {
 	
-	Graph <Airport, DefaultWeightedEdge> grafo;
+	private Graph <Airport, DefaultWeightedEdge> grafo;
+	private ExtFlightDelaysDAO dao;
+	private Map<Integer,Airport> idMap;
+	private List<Rotta> rotte;
 	
-	public  Graph<Airport, DefaultWeightedEdge> creaGrafo(int x) {
+	public Model() {
+		dao = new ExtFlightDelaysDAO();
+		idMap = new HashMap<>();
+		dao.loadAllAirports(idMap);
+	}
+	
+	public void creaGrafo(int x) {
 		this.grafo = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
+		rotte = new ArrayList<>();
 		
-		ExtFlightDelaysDAO dao = new ExtFlightDelaysDAO();
-		List<Airport> aeroporti = dao.loadAllAirports();
+		Graphs.addAllVertices(this.grafo,idMap.values());
 		
-		Graphs.addAllVertices(this.grafo, aeroporti);
-		
-		for(Flight f1 : dao.voliDistanzaMedia()) {
-			if(grafo.containsEdge(aeroporti.get(f1.getDestinationAirportId()),aeroporti.get(f1.getOriginAirportId()))) {
-				DefaultWeightedEdge arco = grafo.getEdge(aeroporti.get(f1.getDestinationAirportId()),aeroporti.get(f1.getOriginAirportId()));
-				double media = (f1.getDistance() + grafo.getEdgeWeight(arco))/2;
-				if(media > x) {
-					Graphs.addEdge(grafo, aeroporti.get(f1.getDestinationAirportId()),aeroporti.get(f1.getOriginAirportId()), media);
+		for(Rotta r : dao.voliDistanzaMedia(idMap,x)) {
+			DefaultWeightedEdge e = grafo.getEdge(r.getA2(),r.getA1());
+			if(e != null) {
+				double nuovaMedia = (r.getDistanza() + grafo.getEdgeWeight(e))/2;
+				if(nuovaMedia > x) {
+					this.grafo.setEdgeWeight(e, nuovaMedia);
+					rotte.add(new Rotta(r.getA1(),r.getA2(),nuovaMedia));
 				}else {
-					grafo.removeEdge(arco);
+					this.grafo.removeEdge(e);
 				}
+				rotte.remove(new Rotta(r.getA2(),r.getA1(),0));
 			}else {
-				if(f1.getDistance()>x) {
-					Graphs.addEdge(grafo, aeroporti.get(f1.getOriginAirportId()),aeroporti.get(f1.getDestinationAirportId()), f1.getDistance());					
-				}
-
+				Graphs.addEdge(grafo, r.getA1(), r.getA2(), r.getDistanza());
+				rotte.add(new Rotta(r.getA1(),r.getA2(),r.getDistanza()));
 			}
 		}
-		
-		return grafo;
+	
 	}
 	
 	public int getNumeroVertici() {
 		return grafo.vertexSet().size();
 	}
 	
-	public Set<DefaultWeightedEdge> getArchi() {
-		return grafo.edgeSet();
+	public int getNumeroArchi() {
+		return grafo.edgeSet().size();
+	}
+	
+	public List<Rotta> getRotte(){
+		return rotte;
 	}
 }
